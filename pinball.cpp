@@ -285,30 +285,20 @@ void draw_ground( float x, float y, float z )
  *******************************************************************/
 
 struct pt {
-  GLFloat x, y;
+  GLfloat x, y;
 };
 
 struct boundary {
   struct pt pos, direction;
-  GLFloat time;
+  GLfloat time;
 };
 
 class pinball {
 public:
   struct pt pos, direction;
 
-  void location (GLFloat elapsed_time) {
-    if (Time < bounceq.front().time) {
-      ;
-    } else {
-      search_queue
-  }
-  
-  ~pinball() {
-    del bounceq
-  }
+  void location (GLfloat elapsed_time);
 
-  queue <struct boundary> bounceq;
 };
 
 
