@@ -28,7 +28,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <deque>
 #include <queue>
+#include <vector>
+
 #include "Timer.h"
 
 Timer TM;
@@ -289,19 +293,68 @@ struct pt {
 };
 
 struct boundary {
-  struct pt pos, direction;
+  struct pt pos;
+  GLfloat dir;
   GLfloat time;
 };
 
 class pinball {
+  struct pt pos;
+  unsigned int lnq;
+  GLfloat dir;
+  GLfloat velocity;
+  std::deque<struct boundary> boundary_q;
+
+  void populate_collisions (GLint N);
+
 public:
-  struct pt pos, direction;
+  void location (GLfloat);
 
-  void location (GLfloat elapsed_time);
-
+  pinball(GLfloat x, GLfloat y, GLfloat dir) {
+    pos.x = x;
+    pos.y = y;
+    this->dir = dir;
+  }
 };
 
 
+void pinball::update_location () {
+  for (;;) {
+    if (elapsed_time < boundary_q.front().time)
+      { /* tranlate the pinball */
+	GLfloat distance = velocity * elapsed_time;
+	pos.x += cos (dir) * distance;
+	pos.y += sin (dir) * distance;
+	break;
+      } 
+    else if (elapsed_time > boundary_q.back().time)
+      { 
+	struct boundary b = boundary_q.back ();
+	time_t time = elapsed_time - b.time;
+	pos = b.pos;
+	dir = b.dir;
+	
+	boundary_q.clear ();
+
+	populate_collisions (lnq);
+      }
+    else /* search for new trajectory */
+      while (!boundary_q.empty() && boundary_q[0].time < elapsed_time) {
+	boundary_q.pop_front ();
+	this->populate_collisions (1);
+      }
+  }
+}
+
+#define SURFACES 14
+
+void pinball::populate_collisions (GLint N) {
+  for (int i=0; i<N; ++i) {
+    struct boundary last = boundary_q.back ();
+    for (int j=0; j<SURFACES; ++j)
+      ;
+  }
+}
 
 /******************************************************************
  * ALL additional functions should be above here
