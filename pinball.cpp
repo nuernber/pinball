@@ -43,6 +43,10 @@ float Time = 0;
 
 void set_colour(float r, float g, float b) ;
 
+#define pi 3.141592653589793
+#define moveAngle (pi / 24)
+void moveViewVertical(double eye[], int down);
+
 #define X 0
 #define Y 1
 #define Z 2
@@ -137,6 +141,7 @@ void drawSphere(void)
 void myKey(unsigned char key, int x, int y)
 {
   float time ;
+  double oldCoord;
   switch (key) {
   case 'q':
     exit(0); 
@@ -156,6 +161,48 @@ void myKey(unsigned char key, int x, int y)
     printf (nfp%2 ? "one\n" : "two\n");
     break;
     
+	// EXTRA CREDIT FUNCTIONALITY:
+	// similar to vim, h, j, k, and l move the view to the left, right
+	// up and down.
+        case 'h':
+            printf("robot: changing view\n");
+	    oldCoord = eye[0];
+            eye[0] = eye[0] * cos(moveAngle) - eye[2] * sin (moveAngle);
+            eye[2] = oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
+            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            break;
+        case 'j':
+            printf("robot: changing view\n");
+	    moveViewVertical(eye, 1);
+            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            break;
+        case 'k':
+            printf("robot: changing view\n");
+	    moveViewVertical(eye, -1);
+            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            break;
+        case 'l':
+            printf("robot: changing view\n");
+	    oldCoord = eye[0];
+            eye[0] = eye[0] * cos(moveAngle) + eye[2] * sin (moveAngle);
+            eye[2] = -oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
+            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            break;
+	// n and m zoom in and zoom out
+	// NOTE: this only works with a perspective projection, not the
+	// default orthogonal projection!
+	case 'u':
+	    printf("robot: changing view\n");
+	    eye[0] /= 1.1;
+	    eye[1] /= 1.1;
+	    eye[2] /= 1.1;
+	    break;
+	case 'i':
+	    printf("robot: changing view\n");
+	    eye[0] *= 1.1;
+	    eye[1] *= 1.1;
+	    eye[2] *= 1.1;
+	    break;
   }
 
   glutPostRedisplay() ;
@@ -288,6 +335,56 @@ void draw_ground( float x, float y, float z )
  * ALL additional functions should be below here
  *******************************************************************/
 
+////////////////////////////////////////////////////
+// Classes 
+
+class Object
+{
+public:
+	virtual bool collides(double start[3], double direction[3], double collision[3]) = 0;
+};
+
+class Wall : public Object
+{
+public:
+	Wall(double width, double height): m_width(width), m_height(height) {}
+	~Wall() {}
+	// draw wall from start coordinates to end coordinates
+	void draw(double start[3], double end[3])
+	{
+		m_start[0] = start[0]; m_start[1] = start[1]; m_start[2] = start[2];
+		m_end[0] = end[0]; m_end[1] = end[1]; m_end[2] = end[2];
+		// draw sides
+		glBegin(GL_POLYGON);
+			glVertex3d(start[0] + m_width/2, start[1] + m_height/2, start[2]);
+			glVertex3d(start[0] + m_width/2, start[1] - m_height/2, start[2]);
+			glVertex3d(end[0] + m_width/2, end[1] - m_height/2, end[2]);
+			glVertex3d(end[0] + m_width/2, end[1] + m_height/2, end[2]);
+		glEnd();
+	}
+
+	bool collides(double start[3], double direction[3], double collision[3])
+	{
+		return true;
+	}
+
+private:
+	double m_width;
+	double m_height;
+	double m_start[3];
+	double m_end[3];
+};
+
+class Pin : public Object
+{
+public:
+	bool collides(double start[3], double direction[3], double collision[3])
+	{
+		return true;
+	}
+};
+
+
 struct pt {
   GLfloat x, y;
 };
@@ -354,6 +451,39 @@ void pinball::populate_collisions (GLint N) {
     for (int j=0; j<SURFACES; ++j)
       ;
   }
+
+// extra credit function... see the myKey function above.
+void moveViewVertical(double* eye, int down)
+{
+	if(eye[0] < 0) down = -down;
+	double sinA = sin(down*moveAngle);
+	double cosA = cos(down*moveAngle);
+	// the angle is 90 degrees minus theta, where 
+	// theta = arctan(z/x).
+	double angle = pi/2 - atan(eye[2]/eye[0]);
+	double wx = cos(angle);
+	double wy = 0;
+	double wz = -sin(angle);
+	// rodriguez's formula
+	double rotation[3][3];
+	rotation[0][0] = cosA + wx*wx*(1 - cosA);
+	rotation[0][1] = -wz*sinA;
+	rotation[0][2] = wx*wz*(1-cosA);
+	rotation[1][0] = wz*sinA;
+	rotation[1][1] = cosA;
+	rotation[1][2] = -wx*sinA;
+	rotation[2][0] = wx*wz*(1-cosA);
+	rotation[2][1] = wx*sinA;
+	rotation[2][2] = cosA+wz*wz*(1-cosA);
+	// matrix multiple the eye by this
+	int row, col;
+	double newEye[3] = {0,0,0};
+	for(row = 0; row < 3; row++)
+	   for(col = 0; col < 3; col++)
+	      newEye[row] += rotation[row][col]*eye[col];
+	eye[0] = newEye[0];
+	eye[1] = newEye[1];
+	eye[2] = newEye[2];
 }
 
 /******************************************************************
@@ -401,7 +531,16 @@ void display(void)
   /************************************************
    * Start your drawing code here
    *************************************************/
-
+  double width = 3; double height = 2;
+  Wall w(width, height);
+  double cornerA[3] = { -7.5, 1.0, 6.0 };
+  double cornerB[3] = { -7.5, 1.0, -6.0 };
+  double cornerC[3] = { 4.5, 1.0, -6.0 };
+  double cornerD[3] = { 4.5, 1.0, 6.0 };
+  w.draw(cornerA, cornerB);
+  w.draw(cornerB, cornerC);
+  w.draw(cornerC, cornerD);
+  w.draw(cornerD, cornerA);
   /************************************************
    * End your drawing code here
    *************************************************/
