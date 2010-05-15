@@ -350,13 +350,70 @@ public:
 	{
 		m_start[0] = start[0]; m_start[1] = start[1]; m_start[2] = start[2];
 		m_end[0] = end[0]; m_end[1] = end[1]; m_end[2] = end[2];
+		double xIncr = start[0] < 0 ? m_width/2 : -m_width/2;
+		double zIncr = start[2] < 0 ? m_width/2 : -m_width/2;
+
 		// draw sides
-		glBegin(GL_POLYGON);
-			glVertex3d(start[0] + m_width/2, start[1] + m_height/2, start[2]);
-			glVertex3d(start[0] + m_width/2, start[1] - m_height/2, start[2]);
-			glVertex3d(end[0] + m_width/2, end[1] - m_height/2, end[2]);
-			glVertex3d(end[0] + m_width/2, end[1] + m_height/2, end[2]);
-		glEnd();
+		if(start[0] == end[0])
+		{
+			// draw the inner wall, i.e. closer to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(end[0] + xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+			glEnd();
+			// draw the top
+			set_colour(0.0, 0.5, 1.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+			glEnd();
+			// draw the outer wall, i.e. further to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(start[0] - xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+			glEnd();
+		} else {
+			// draw the inner wall, i.e. closer to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+			glEnd();
+			// draw the top
+			set_colour(0.0, 0.5, 1.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+			glEnd();
+			// draw the outer wall, i.e. further to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+			glEnd();
+			// draw the ends
+		/*	set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
+			glEnd();*/
+		}
 	}
 
 	bool collides(double start[3], double direction[3], double collision[3])
@@ -478,16 +535,20 @@ void display(void)
   /************************************************
    * Start your drawing code here
    *************************************************/
-  double width = 3; double height = 2;
+  double width = 0.5; double height = 2;
   Wall w(width, height);
-  double cornerA[3] = { -7.5, 1.0, 6.0 };
-  double cornerB[3] = { -7.5, 1.0, -6.0 };
-  double cornerC[3] = { 4.5, 1.0, -6.0 };
-  double cornerD[3] = { 4.5, 1.0, 6.0 };
+  double cornerA[3] = { -6.0, 1.0, 6.0 };
+  double cornerB[3] = { -6.0, 1.0, -6.0 };
+  double cornerC[3] = { 6.0, 1.0, -6.0 };
+  double cornerD[3] = { 6.0, 1.0, 6.0 };
+  double cornerA2[3] = { -6.25, 1.0, 5.75 };
+  double cornerB2[3] = { -6.25, 1.0, -5.75 };
+  double cornerC2[3] = { 6.25, 1.0, -5.75 };
+  double cornerD2[3] = { 6.25, 1.0, 5.75 };
   w.draw(cornerA, cornerB);
-  w.draw(cornerB, cornerC);
+  w.draw(cornerB2, cornerC2);
   w.draw(cornerC, cornerD);
-  w.draw(cornerD, cornerA);
+  w.draw(cornerD2, cornerA2);
   /************************************************
    * End your drawing code here
    *************************************************/
