@@ -161,40 +161,40 @@ void myKey(unsigned char key, int x, int y)
 	// similar to vim, h, j, k, and l move the view to the left, right
 	// up and down.
         case 'h':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    oldCoord = eye[0];
             eye[0] = eye[0] * cos(moveAngle) - eye[2] * sin (moveAngle);
             eye[2] = oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'j':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    moveViewVertical(eye, 1);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'k':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    moveViewVertical(eye, -1);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'l':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    oldCoord = eye[0];
             eye[0] = eye[0] * cos(moveAngle) + eye[2] * sin (moveAngle);
             eye[2] = -oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
 	// n and m zoom in and zoom out
 	// NOTE: this only works with a perspective projection, not the
 	// default orthogonal projection!
 	case 'u':
-	    printf("robot: changing view\n");
+	    printf("pinball: changing view\n");
 	    eye[0] /= 1.1;
 	    eye[1] /= 1.1;
 	    eye[2] /= 1.1;
 	    break;
 	case 'i':
-	    printf("robot: changing view\n");
+	    printf("pinball: changing view\n");
 	    eye[0] *= 1.1;
 	    eye[1] *= 1.1;
 	    eye[2] *= 1.1;
@@ -337,6 +337,7 @@ void draw_ground( float x, float y, float z )
 class Object
 {
 public:
+	// returns the collision coordinates in collision
 	virtual bool collides(double start[3], double direction[3], double collision[3]) = 0;
 };
 
@@ -363,6 +364,7 @@ public:
 				glVertex3d(start[0] + xIncr, start[1] - m_height/2, start[2]);
 				glVertex3d(end[0] + xIncr, end[1] - m_height/2, end[2]);
 				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glNormal3d(1.0, 0.0, 0.0);
 			glEnd();
 			// draw the top
 			set_colour(0.0, 0.5, 1.0);
@@ -371,6 +373,7 @@ public:
 				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
 				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
 				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glNormal3d(0.0, 3.0, 0.0);
 			glEnd();
 			// draw the outer wall, i.e. further to the origin
 			set_colour(1.0, 0.5, 0.0);
@@ -379,7 +382,21 @@ public:
 				glVertex3d(end[0] - xIncr, end[1] - m_height/2, end[2]);
 				glVertex3d(start[0] - xIncr, start[1] - m_height/2, start[2]);
 				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glNormal3d(-3.0, 0.0, 0.0);
 			glEnd();
+			// draw normals
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0.0, 0.0, 0.0);
+				glBegin(GL_LINES);
+					glVertex3d(start[0] + xIncr, start[1], (start[2]+end[2])/2);
+					glVertex3d(start[0] + xIncr + 1, start[1], (start[2]+end[2])/2);
+					glVertex3d(end[0], end[1] + m_height/2, (start[2]+end[2])/2);
+					glVertex3d(end[0], end[1] + m_height/2 + 1, (start[2]+end[2])/2);
+					glVertex3d(end[0] - xIncr, end[1], (start[2]+end[2])/2);
+					glVertex3d(end[0] - xIncr - 1, end[1], (start[2]+end[2])/2);
+				glEnd();
+			}
 		} else {
 			// draw the inner wall, i.e. closer to the origin
 			set_colour(1.0, 0.5, 0.0);
@@ -405,17 +422,23 @@ public:
 				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
 				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
 			glEnd();
-			// draw the ends
-		/*	set_colour(1.0, 0.5, 0.0);
-			glBegin(GL_POLYGON);
-				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
-				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
-				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
-				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
-			glEnd();*/
+			// draw normals
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0.0, 0.0, 0.0);
+				glBegin(GL_LINES);
+					glVertex3d((start[0]+end[0])/2, start[1], start[2] + zIncr);
+					glVertex3d((start[0]+end[0])/2, start[1], start[2] + zIncr + 1);
+					glVertex3d((start[0]+end[0])/2, end[1] + m_height/2, end[2]);
+					glVertex3d((start[0]+end[0])/2, end[1] + m_height/2 + 1, end[2]);
+					glVertex3d((start[0]+end[0])/2, end[1], end[2] - zIncr);
+					glVertex3d((start[0]+end[0])/2, end[1], end[2] - zIncr - 1);
+				glEnd();
+			}
 		}
 	}
 
+	// returns the collision coordinates in collision
 	bool collides(double start[3], double direction[3], double collision[3])
 	{
 		return true;
@@ -431,6 +454,12 @@ private:
 class Pin : public Object
 {
 public:
+	void draw(double coords[3])
+	{
+		
+	}
+
+	// returns the collision coordinates in collision
 	bool collides(double start[3], double direction[3], double collision[3])
 	{
 		return true;
@@ -537,6 +566,7 @@ void display(void)
    *************************************************/
   double width = 0.5; double height = 2;
   Wall w(width, height);
+  // TODO: make x walls longer and z walls shorter
   double cornerA[3] = { -6.0, 1.0, 6.0 };
   double cornerB[3] = { -6.0, 1.0, -6.0 };
   double cornerC[3] = { 6.0, 1.0, -6.0 };
