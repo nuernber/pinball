@@ -43,6 +43,9 @@ void set_colour(float r, float g, float b) ;
 #define moveAngle (pi / 24)
 void moveViewVertical(double eye[], int down);
 
+#define NUMBER_PINS 10
+#define PIN_WIDTH 0.3
+
 #define X 0
 #define Y 1
 #define Z 2
@@ -454,9 +457,35 @@ private:
 class Pin : public Object
 {
 public:
-	void draw(double coords[3])
+	void draw(double coords[3], double height)
 	{
-		
+		int nRect = 24;
+		double x1, z1, x2, z2;
+		for(int i = 0; i < nRect; i++)
+		{
+			double scale = PIN_WIDTH;
+			x1 = sin(2*pi/nRect*i) * scale + coords[0];
+			z1 = cos(2*pi/nRect*i) * scale + coords[2];
+			x2 = sin(2*pi/nRect*(i+1)) * scale + coords[0];
+			z2 = cos(2*pi/nRect*(i+1)) * scale + coords[2];
+			set_colour(1.0, 0.8, 0.3);
+			glBegin(GL_POLYGON);
+				glVertex3d(x1, 0, z1);
+				glVertex3d(x2, 0, z2);
+				glVertex3d(x2, height, z2);
+				glVertex3d(x1, height, z1);
+			glEnd();
+		}
+		m_coords[0] = coords[0];
+		m_coords[1] = coords[1];
+		m_coords[2] = coords[2];
+	}
+
+	void getCoords(double coords[3])
+	{
+		coords[0] = m_coords[0];
+		coords[1] = m_coords[1];
+		coords[2] = m_coords[2];
 	}
 
 	// returns the collision coordinates in collision
@@ -464,6 +493,8 @@ public:
 	{
 		return true;
 	}
+private:
+	double m_coords[3];
 };
 
 
@@ -565,7 +596,10 @@ void display(void)
    * Start your drawing code here
    *************************************************/
   double width = 0.5; double height = 2;
-  Wall w(width, height);
+  Wall w1(width, height);
+  Wall w2(width, height);
+  Wall w3(width, height);
+  Wall w4(width, height);
   // TODO: make x walls longer and z walls shorter
   double cornerA[3] = { -6.0, 1.0, 6.0 };
   double cornerB[3] = { -6.0, 1.0, -6.0 };
@@ -575,10 +609,24 @@ void display(void)
   double cornerB2[3] = { -6.25, 1.0, -5.75 };
   double cornerC2[3] = { 6.25, 1.0, -5.75 };
   double cornerD2[3] = { 6.25, 1.0, 5.75 };
-  w.draw(cornerA, cornerB);
-  w.draw(cornerB2, cornerC2);
-  w.draw(cornerC, cornerD);
-  w.draw(cornerD2, cornerA2);
+  w1.draw(cornerA, cornerB);
+  w2.draw(cornerB2, cornerC2);
+  w3.draw(cornerC, cornerD);
+  w4.draw(cornerD2, cornerA2);
+
+  Pin p[NUMBER_PINS];
+  double pinCoords[NUMBER_PINS][2] = {
+    {5.5, 3.5}, {3, 0}, {4, -4}, {1, -3}, {3.75, -1},
+    {-1.25, 3}, {-3.5, 5}, {-0.5, 1.8}, {-1, -3.2}, {-4, -2.7}
+  };
+  for(int i = 0; i < NUMBER_PINS; i++)
+  {
+  	double x = pinCoords[i][0];
+	double z = pinCoords[i][1];
+  	double coords[3] = {x, 0.0, z};
+	double pHeight = 3.0;
+	p[i].draw(coords, pHeight);
+  }
   /************************************************
    * End your drawing code here
    *************************************************/
