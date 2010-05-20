@@ -388,6 +388,21 @@ public:
 				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
 				glNormal3d(-3.0, 0.0, 0.0);
 			glEnd();
+			// draw the ends
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] - m_height/2, end[2]);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(start[0] - xIncr, start[1] - m_height/2, start[2]);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
 			// draw normals
 			if(glIsEnabled(GL_AUTO_NORMAL))
 			{
@@ -425,6 +440,21 @@ public:
 				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
 				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
 				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+			glEnd();
+			// draw the ends
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+				//glNormal3d(-3.0, 0.0, 0.0);
 			glEnd();
 			// draw normals
 			if(glIsEnabled(GL_AUTO_NORMAL))
@@ -642,11 +672,10 @@ void display(void)
   Wall w2(width, height);
   Wall w3(width, height);
   Wall w4(width, height);
-  // TODO: make x walls longer and z walls shorter
-  double cornerA[3] = { -6.0, 1.0, 6.0 };
-  double cornerB[3] = { -6.0, 1.0, -6.0 };
-  double cornerC[3] = { 6.0, 1.0, -6.0 };
-  double cornerD[3] = { 6.0, 1.0, 6.0 };
+  double cornerA[3] = { -6.0, 1.0, 5.5 };
+  double cornerB[3] = { -6.0, 1.0, -5.5 };
+  double cornerC[3] = { 6.0, 1.0, -5.5 };
+  double cornerD[3] = { 6.0, 1.0, 5.5 };
   double cornerA2[3] = { -6.25, 1.0, 5.75 };
   double cornerB2[3] = { -6.25, 1.0, -5.75 };
   double cornerC2[3] = { 6.25, 1.0, -5.75 };
