@@ -52,10 +52,8 @@ void moveViewVertical(double eye[], int down);
 
 // The eye point and look-at point.
 int currentview = 0;
-#define NVIEWS 5
-double views[NVIEWS][3] = {{0, 10.0, 8.0},  {-5, 10.0, 8.0}, 
-                           {0, 10.0, -8.0}, {0, 0, 8.0}, {-5, 10.0, 8.0}};
-double eye[3] = {views[0][0], views[0][1], views[0][2]};
+#define NVIEWS 3
+double eye[3] = {1,8,0};
 
 double ref[3] = {0.0, 0.0, 0.0};
 
@@ -149,10 +147,14 @@ void myKey(unsigned char key, int x, int y)
   case 'v':
     printf("pinball: changing view\n");
     currentview = (currentview + 1) % NVIEWS;
-    eye[0] = views[currentview][0];
-    eye[1] = views[currentview][1];
-    eye[2] = views[currentview][2];
-    printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+    
+    if(currentview == 0)
+    {
+        eye[0] = 1;
+        eye[1] = 8;
+        eye[2] = 0;
+    }
+    printf("pinball: eye is %.2f %.2f %.2f, at view %d\n", eye[0], eye[1], eye[2], currentview);
     break;
 	    
   case 'n':
@@ -598,8 +600,22 @@ void display(void)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  glFrustum(-5,5,-5,5,4,100);
-  //glOrtho(-6,6,-6,6,-500,500) ;
+  if(currentview == 0)
+      glOrtho(-6,6,-6,6,-500,500);
+  else if(currentview == 1)
+  {
+      // flythrough
+      glFrustum(-5,5,-5,5,4,100);
+      int a = 16;
+      int b = 8;
+      const int period = 10; // seconds
+      const int yPeriod = 5; // seconds
+      eye[X] = a * cos(Time * (2*pi) / period);
+      eye[Y] = 7.5 + sin(Time * (2*pi) / yPeriod);
+      eye[Z] = b * sin(Time * (2*pi) / period);
+  }
+  else
+      glFrustum(-5,5,-5,5,4,100);
 
   glMatrixMode(GL_MODELVIEW) ;
   glLoadIdentity();
