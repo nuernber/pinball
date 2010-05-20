@@ -235,7 +235,6 @@ void myinit(void)
   /*    glFrontFace (GL_CW); */
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-  glEnable(GL_AUTO_NORMAL);
   glEnable(GL_NORMALIZE);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
@@ -475,7 +474,34 @@ public:
 				glVertex3d(x2, height, z2);
 				glVertex3d(x1, height, z1);
 			glEnd();
+			// draw normals for sides and top
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0, 0, 0);
+				glBegin(GL_LINES);
+					glVertex3d((x1+x2)/2, height/2, (z1+z2)/2);
+					double newX = (x1+x2)/2 + ((x1+x2)/2 - coords[0]);
+					double newZ = (z1+z2)/2 + ((z1+z2)/2 - coords[2]);
+					glVertex3d(newX, height/2, newZ);
+				glEnd();
+			}
 		}
+		// draw sphere for top
+		set_colour(1.0, 0.8, 0.3);
+		glPushMatrix();
+			glTranslated(coords[0], coords[1] + height, coords[2]);
+			glScalef(PIN_WIDTH, PIN_WIDTH, PIN_WIDTH);
+			drawSphere();
+		glPopMatrix();
+		// draw normal on top of sphere
+		if(glIsEnabled(GL_AUTO_NORMAL))
+		{
+			glBegin(GL_LINES);
+				glVertex3d(coords[0], height + PIN_WIDTH, coords[2]);
+				glVertex3d(coords[0], height + PIN_WIDTH + 1, coords[2]);
+			glEnd();
+		}
+
 		m_coords[0] = coords[0];
 		m_coords[1] = coords[1];
 		m_coords[2] = coords[2];
