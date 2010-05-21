@@ -335,59 +335,78 @@ void draw_ground( float x, float y, float z )
  * ALL additional functions should be below here
  *******************************************************************/
 
+vector<Object> obstacles;
+
 ////////////////////////////////////////////////////
 // Classes 
+
+#define FABS(A, B) (A)<0?-1*(A):(A)
+
+GLfloat pt_norm (pt s, pt e) {
+  return sqrt (powf (FABS (s.x - e.x), 2)
+	       + powf (FABS (s.y - e.y), 2));
+}
+
+GLfloat pt_slope (pt s, pt e) {
+  return  (s.y-e.y) / (s.x-e.x);
+}
+
+struct pt {
+  GLfloat x, y;
+};
 
 class Object
 {
 public:
-	virtual bool collides(double start[3], double direction[3], double collision[3]) = 0;
+  virtual bool collides(pinball b);
+  virtual GLfloat time_of_collision(pinball);
 };
 
 class Wall : public Object
 {
 public:
-	Wall(double width, double height): m_width(width), m_height(height) {}
-	~Wall() {}
-	// draw wall from start coordinates to end coordinates
-	void draw(double start[3], double end[3])
-	{
-		m_start[0] = start[0]; m_start[1] = start[1]; m_start[2] = start[2];
-		m_end[0] = end[0]; m_end[1] = end[1]; m_end[2] = end[2];
-		// draw sides
-		glBegin(GL_POLYGON);
-			glVertex3d(start[0] + m_width/2, start[1] + m_height/2, start[2]);
-			glVertex3d(start[0] + m_width/2, start[1] - m_height/2, start[2]);
-			glVertex3d(end[0] + m_width/2, end[1] - m_height/2, end[2]);
-			glVertex3d(end[0] + m_width/2, end[1] + m_height/2, end[2]);
-		glEnd();
-	}
+  Wall(struct pt st, struct pt end, double height): 
+    _st(st), _end(end), _height(height) {}
+  
+  ~Wall() {}
 
-	bool collides(double start[3], double direction[3], double collision[3])
-	{
-		return true;
-	}
-
+  void draw() {
+    glBegin( GL_POLYGON );
+    glVertex3d(  _st.x,       0,  _st.y );
+    glVertex3d( _end.x,       0, _end.y );
+    glVertex3d(  _st.x, _height,  _st.y );
+    glVertex3d( _end.x, _height, _end.y );
+    glEnd();
+  }
+  
 private:
-	double m_width;
-	double m_height;
-	double m_start[3];
-	double m_end[3];
+  double _height;
+  struct pt _st, _end;
 };
 
-class Pin : public Object
-{
+bool collides(pinball b) {
+  GLfloat a, b, v;
+  a = pt_slope( b.pos,   _st );
+  b = pt_slope( b.pos,  _end );
+  v = pt_slope( b.pos, b.dir );
+  
+  return (a <= v && v <= b) || (b <= v && v <= a);
+}
+
+GLfloat Wall::time_of_collision (pinball p) {
+  ;
+}
+
+class Pin : public Object {
 public:
-	bool collides(double start[3], double direction[3], double collision[3])
-	{
-		return true;
-	}
+  bool collides(double start[3], double direction[3], double collision[3]) {
+    return true;
+  }
 };
 
-
-struct pt {
-  GLfloat x, y;
-};
+GLfloat Pin::time_of_collision (pinball p) {
+  return 3.1415;
+}
 
 struct boundary {
   struct pt pos;
@@ -396,16 +415,14 @@ struct boundary {
 };
 
 class pinball {
-  struct pt pos;
+  struct pt pos, dir;
   unsigned int lnq;
-  GLfloat dir;
   GLfloat velocity;
   std::deque<struct boundary> boundary_q;
 
   void populate_collisions (GLint N);
-
 public:
-  void location (GLfloat);
+  void update_location (void);
 
   pinball(GLfloat x, GLfloat y, GLfloat dir) {
     pos.x = x;
@@ -414,20 +431,21 @@ public:
   }
 };
 
-
 void pinball::update_location () {
+  time_t elapsed_time = Time;
+
   for (;;) {
     if (elapsed_time < boundary_q.front().time)
-      { /* tranlate the pinball */
+      { /* translate the pinball */
 	GLfloat distance = velocity * elapsed_time;
 	pos.x += cos (dir) * distance;
 	pos.y += sin (dir) * distance;
 	break;
       } 
     else if (elapsed_time > boundary_q.back().time)
-      { 
+      { /* Overshot the collisions; update, repopulate and repeat */
 	struct boundary b = boundary_q.back ();
-	time_t time = elapsed_time - b.time;
+	elapsed_time -= b.time;
 	pos = b.pos;
 	dir = b.dir;
 	
@@ -439,18 +457,27 @@ void pinball::update_location () {
       while (!boundary_q.empty() && boundary_q[0].time < elapsed_time) {
 	boundary_q.pop_front ();
 	this->populate_collisions (1);
+	break;
       }
   }
 }
 
-#define SURFACES 14
-
 void pinball::populate_collisions (GLint N) {
   for (int i=0; i<N; ++i) {
     struct boundary last = boundary_q.back ();
-    for (int j=0; j<SURFACES; ++j)
-      ;
-  }
+    GLfloat min_time = obstacles[0].point_of_collision (this);
+    int k=0;
+
+    for (int j=1; j<obstacles.size(); ++j) {
+      GLfloat tmp = obstacles[j].time_of_collision (this);
+      if (tmp < min_time) {
+	min_time = tmp;
+	k=j;
+      }
+    }
+
+    //boundary_q.push_back (,min_time);
+}
 
 // extra credit function... see the myKey function above.
 void moveViewVertical(double* eye, int down)
@@ -531,6 +558,7 @@ void display(void)
   /************************************************
    * Start your drawing code here
    *************************************************/
+
   double width = 3; double height = 2;
   Wall w(width, height);
   double cornerA[3] = { -7.5, 1.0, 6.0 };
@@ -541,6 +569,7 @@ void display(void)
   w.draw(cornerB, cornerC);
   w.draw(cornerC, cornerD);
   w.draw(cornerD, cornerA);
+
   /************************************************
    * End your drawing code here
    *************************************************/
