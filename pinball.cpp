@@ -47,16 +47,17 @@ void set_colour(float r, float g, float b) ;
 #define moveAngle (pi / 24)
 void moveViewVertical(double eye[], int down);
 
+#define NUMBER_PINS 10
+#define PIN_WIDTH 0.3
+
 #define X 0
 #define Y 1
 #define Z 2
 
 // The eye point and look-at point.
 int currentview = 0;
-#define NVIEWS 5
-double views[NVIEWS][3] = {{0, 10.0, 8.0},  {-5, 10.0, 8.0}, 
-                           {0, 10.0, -8.0}, {0, 0, 8.0}, {-5, 10.0, 8.0}};
-double eye[3] = {views[0][0], views[0][1], views[0][2]};
+#define NVIEWS 3
+double eye[3] = {1,8,0};
 
 double ref[3] = {0.0, 0.0, 0.0};
 
@@ -150,10 +151,14 @@ void myKey(unsigned char key, int x, int y)
   case 'v':
     printf("pinball: changing view\n");
     currentview = (currentview + 1) % NVIEWS;
-    eye[0] = views[currentview][0];
-    eye[1] = views[currentview][1];
-    eye[2] = views[currentview][2];
-    printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+    
+    if(currentview == 0)
+    {
+        eye[0] = 1;
+        eye[1] = 8;
+        eye[2] = 0;
+    }
+    printf("pinball: eye is %.2f %.2f %.2f, at view %d\n", eye[0], eye[1], eye[2], currentview);
     break;
 	    
   case 'n':
@@ -165,40 +170,40 @@ void myKey(unsigned char key, int x, int y)
 	// similar to vim, h, j, k, and l move the view to the left, right
 	// up and down.
         case 'h':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    oldCoord = eye[0];
             eye[0] = eye[0] * cos(moveAngle) - eye[2] * sin (moveAngle);
             eye[2] = oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'j':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    moveViewVertical(eye, 1);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'k':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    moveViewVertical(eye, -1);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
         case 'l':
-            printf("robot: changing view\n");
+            printf("pinball: changing view\n");
 	    oldCoord = eye[0];
             eye[0] = eye[0] * cos(moveAngle) + eye[2] * sin (moveAngle);
             eye[2] = -oldCoord * sin(moveAngle) + eye[2] * cos (moveAngle);
-            printf("robot: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
+            printf("pinball: eye is %.2f %.2f %.2f\n", eye[0], eye[1], eye[2]);
             break;
 	// n and m zoom in and zoom out
 	// NOTE: this only works with a perspective projection, not the
 	// default orthogonal projection!
 	case 'u':
-	    printf("robot: changing view\n");
+	    printf("pinball: changing view\n");
 	    eye[0] /= 1.1;
 	    eye[1] /= 1.1;
 	    eye[2] /= 1.1;
 	    break;
 	case 'i':
-	    printf("robot: changing view\n");
+	    printf("pinball: changing view\n");
 	    eye[0] *= 1.1;
 	    eye[1] *= 1.1;
 	    eye[2] *= 1.1;
@@ -236,7 +241,6 @@ void myinit(void)
   /*    glFrontFace (GL_CW); */
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-  glEnable(GL_AUTO_NORMAL);
   glEnable(GL_NORMALIZE);
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LESS);
@@ -358,40 +362,220 @@ struct pt {
 class Object
 {
 public:
-  virtual bool collides(pinball b);
+	// returns the collision coordinates in collision
+  virtual bool collides(pinball b) - 0;
   virtual GLfloat time_of_collision(pinball);
+	virtual bool collides(double start[3], double direction[3], double collision[3]) = 0;
 };
 
 class Wall : public Object
 {
 public:
-  Wall(struct pt st, struct pt end, double height): 
-    _st(st), _end(end), _height(height) {}
-  
-  ~Wall() {}
+	
+	Wall(double width, double height): m_width(width), m_height(height) {}
+	~Wall() {}
+	// draw wall from start coordinates to end coordinates
+	void draw(double start[3], double end[3])
+	{
+		m_start[0] = start[0]; m_start[1] = start[1]; m_start[2] = start[2];
+		m_end[0] = end[0]; m_end[1] = end[1]; m_end[2] = end[2];
+		double xIncr = start[0] < 0 ? m_width/2 : -m_width/2;
+		double zIncr = start[2] < 0 ? m_width/2 : -m_width/2;
 
-  void draw() {
-    glBegin( GL_POLYGON );
-    glVertex3d(  _st.x,       0,  _st.y );
-    glVertex3d( _end.x,       0, _end.y );
-    glVertex3d(  _st.x, _height,  _st.y );
-    glVertex3d( _end.x, _height, _end.y );
-    glEnd();
-  }
-  
+		// draw sides
+		if(start[0] == end[0])
+		{
+			// draw the inner wall, i.e. closer to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(end[0] + xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glNormal3d(1.0, 0.0, 0.0);
+			glEnd();
+			// draw the top
+			set_colour(0.0, 0.5, 1.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glNormal3d(0.0, 3.0, 0.0);
+			glEnd();
+			// draw the outer wall, i.e. further to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(start[0] - xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			// draw the ends
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0] - xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] + m_height/2, end[2]);
+				glVertex3d(end[0] + xIncr, end[1] - m_height/2, end[2]);
+				glVertex3d(end[0] - xIncr, end[1] - m_height/2, end[2]);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0] - xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] + m_height/2, start[2]);
+				glVertex3d(start[0] + xIncr, start[1] - m_height/2, start[2]);
+				glVertex3d(start[0] - xIncr, start[1] - m_height/2, start[2]);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			// draw normals
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0.0, 0.0, 0.0);
+				glBegin(GL_LINES);
+					glVertex3d(start[0] + xIncr, start[1], (start[2]+end[2])/2);
+					glVertex3d(start[0] + xIncr + 1, start[1], (start[2]+end[2])/2);
+					glVertex3d(end[0], end[1] + m_height/2, (start[2]+end[2])/2);
+					glVertex3d(end[0], end[1] + m_height/2 + 1, (start[2]+end[2])/2);
+					glVertex3d(end[0] - xIncr, end[1], (start[2]+end[2])/2);
+					glVertex3d(end[0] - xIncr - 1, end[1], (start[2]+end[2])/2);
+				glEnd();
+			}
+		} else {
+			// draw the inner wall, i.e. closer to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+			glEnd();
+			// draw the top
+			set_colour(0.0, 0.5, 1.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+			glEnd();
+			// draw the outer wall, i.e. further to the origin
+			set_colour(1.0, 0.5, 0.0);
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+			glEnd();
+			// draw the ends
+			glBegin(GL_POLYGON);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] - zIncr);
+				glVertex3d(end[0], end[1] + m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] + zIncr);
+				glVertex3d(end[0], end[1] - m_height/2, end[2] - zIncr);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			glBegin(GL_POLYGON);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] - zIncr);
+				glVertex3d(start[0], start[1] - m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] + zIncr);
+				glVertex3d(start[0], start[1] + m_height/2, start[2] - zIncr);
+				//glNormal3d(-3.0, 0.0, 0.0);
+			glEnd();
+			// draw normals
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0.0, 0.0, 0.0);
+				glBegin(GL_LINES);
+					glVertex3d((start[0]+end[0])/2, start[1], start[2] + zIncr);
+					glVertex3d((start[0]+end[0])/2, start[1], start[2] + zIncr + 1);
+					glVertex3d((start[0]+end[0])/2, end[1] + m_height/2, end[2]);
+					glVertex3d((start[0]+end[0])/2, end[1] + m_height/2 + 1, end[2]);
+					glVertex3d((start[0]+end[0])/2, end[1], end[2] - zIncr);
+					glVertex3d((start[0]+end[0])/2, end[1], end[2] - zIncr - 1);
+				glEnd();
+			}
+		}
+	}
+
+	// returns the collision coordinates in collision
+	bool collides(double start[3], double direction[3], double collision[3])
+	{
+		return true;
+	}
+
 private:
   double _height;
   struct pt _st, _end;
 };
 
-bool collides(pinball b) {
-  GLfloat a, b, v;
-  a = pt_slope( b.pos,   _st );
-  b = pt_slope( b.pos,  _end );
-  v = pt_slope( b.pos, b.dir );
-  
-  return (a <= v && v <= b) || (b <= v && v <= a);
-}
+class Pin : public Object
+{
+public:
+	void draw(double coords[3], double height)
+	{
+		int nRect = 24;
+		double x1, z1, x2, z2;
+		for(int i = 0; i < nRect; i++)
+		{
+			double scale = PIN_WIDTH;
+			x1 = sin(2*pi/nRect*i) * scale + coords[0];
+			z1 = cos(2*pi/nRect*i) * scale + coords[2];
+			x2 = sin(2*pi/nRect*(i+1)) * scale + coords[0];
+			z2 = cos(2*pi/nRect*(i+1)) * scale + coords[2];
+			set_colour(1.0, 0.8, 0.3);
+			glBegin(GL_POLYGON);
+				glVertex3d(x1, 0, z1);
+				glVertex3d(x2, 0, z2);
+				glVertex3d(x2, height, z2);
+				glVertex3d(x1, height, z1);
+			glEnd();
+			// draw normals for sides and top
+			if(glIsEnabled(GL_AUTO_NORMAL))
+			{
+				set_colour(0, 0, 0);
+				glBegin(GL_LINES);
+					glVertex3d((x1+x2)/2, height/2, (z1+z2)/2);
+					double newX = (x1+x2)/2 + ((x1+x2)/2 - coords[0]);
+					double newZ = (z1+z2)/2 + ((z1+z2)/2 - coords[2]);
+					glVertex3d(newX, height/2, newZ);
+				glEnd();
+			}
+		}
+		// draw sphere for top
+		set_colour(1.0, 0.8, 0.3);
+		glPushMatrix();
+			glTranslated(coords[0], coords[1] + height, coords[2]);
+			glScalef(PIN_WIDTH, PIN_WIDTH, PIN_WIDTH);
+			drawSphere();
+		glPopMatrix();
+		// draw normal on top of sphere
+		if(glIsEnabled(GL_AUTO_NORMAL))
+		{
+			glBegin(GL_LINES);
+				glVertex3d(coords[0], height + PIN_WIDTH, coords[2]);
+				glVertex3d(coords[0], height + PIN_WIDTH + 1, coords[2]);
+			glEnd();
+		}
+
+		m_coords[0] = coords[0];
+		m_coords[1] = coords[1];
+		m_coords[2] = coords[2];
+	}
+
+	void getCoords(double coords[3])
+	{
+		coords[0] = m_coords[0];
+		coords[1] = m_coords[1];
+		coords[2] = m_coords[2];
+	}
+
+	// returns the collision coordinates in collision
+	bool collides(double start[3], double direction[3], double collision[3])
+	{
+		return true;
+	}
+private:
+	double m_coords[3];
+};
 
 GLfloat Wall::time_of_collision (pinball p) {
   ;
@@ -535,8 +719,22 @@ void display(void)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  glFrustum(-5,5,-5,5,4,100);
-  //glOrtho(-6,6,-6,6,-500,500) ;
+  if(currentview == 0)
+      glOrtho(-6,6,-6,6,-500,500);
+  else if(currentview == 1)
+  {
+      // flythrough
+      glFrustum(-5,5,-5,5,4,100);
+      int a = 16;
+      int b = 8;
+      const int period = 10; // seconds
+      const int yPeriod = 5; // seconds
+      eye[X] = a * cos(Time * (2*pi) / period);
+      eye[Y] = 7.5 + sin(Time * (2*pi) / yPeriod);
+      eye[Z] = b * sin(Time * (2*pi) / period);
+  }
+  else
+      glFrustum(-5,5,-5,5,4,100);
 
   glMatrixMode(GL_MODELVIEW) ;
   glLoadIdentity();
@@ -558,18 +756,38 @@ void display(void)
   /************************************************
    * Start your drawing code here
    *************************************************/
+ double width = 0.5; double height = 2;
+  Wall w1(width, height);
+  Wall w2(width, height);
+  Wall w3(width, height);
+  Wall w4(width, height);
+  double cornerA[3] = { -6.0, 1.0, 5.5 };
+  double cornerB[3] = { -6.0, 1.0, -5.5 };
+  double cornerC[3] = { 6.0, 1.0, -5.5 };
+  double cornerD[3] = { 6.0, 1.0, 5.5 };
+  double cornerA2[3] = { -6.25, 1.0, 5.75 };
+  double cornerB2[3] = { -6.25, 1.0, -5.75 };
+  double cornerC2[3] = { 6.25, 1.0, -5.75 };
+  double cornerD2[3] = { 6.25, 1.0, 5.75 };
+  w1.draw(cornerA, cornerB);
+  w2.draw(cornerB2, cornerC2);
+  w3.draw(cornerC, cornerD);
+  w4.draw(cornerD2, cornerA2);
 
-  double width = 3; double height = 2;
-  Wall w(width, height);
-  double cornerA[3] = { -7.5, 1.0, 6.0 };
-  double cornerB[3] = { -7.5, 1.0, -6.0 };
-  double cornerC[3] = { 4.5, 1.0, -6.0 };
-  double cornerD[3] = { 4.5, 1.0, 6.0 };
-  w.draw(cornerA, cornerB);
-  w.draw(cornerB, cornerC);
-  w.draw(cornerC, cornerD);
-  w.draw(cornerD, cornerA);
-
+  Pin p[NUMBER_PINS];
+  double pinCoords[NUMBER_PINS][2] = {
+    {5.5, 3.5}, {3, 0}, {4, -4}, {1, -3}, {3.75, -1},
+    {-1.25, 3}, {-3.5, 5}, {-0.5, 1.8}, {-1, -3.2}, {-4, -2.7}
+  };
+  for(int i = 0; i < NUMBER_PINS; i++)
+  {
+  	double x = pinCoords[i][0];
+	double z = pinCoords[i][1];
+  	double coords[3] = {x, 0.0, z};
+	double pHeight = 3.0;
+	p[i].draw(coords, pHeight);
+  }
+  
   /************************************************
    * End your drawing code here
    *************************************************/
