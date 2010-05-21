@@ -1,0 +1,33 @@
+Glen Lenker and Benjamin Nuernberger both worked on this project in
+collaboration. Below is a breakdown of how we split up the work:
+
+* Ben: There must be at least 10 pins and 4 walls for your pinball machine.
+* Ben: The required pieces must be drawn using simple polygons (triangles or
+quads), specifying the normal for each. You may draw other things (in-
+cluding the pinball) using the convenience functions provided in assign-
+ment 1. Also, you may fill the top of your cylinder with a sphere, so that
+when viewed from the top it can be seen easily.
+* Ben: When ’n’ is pressed, drawing of the normals should turn on and off
+* Ben: All normals should have unit length and be located on the center of
+the polygon they correspond to.
+* Glen: The initial direction and location of the pinball should be chosen
+randomly at runtime (unless you specify otherwise in the extra credit).
+* Glen: When the pinball runs into a pin or a wall, it should reflect off
+of it and continue along.
+* Ben: Pressing ’v’ should toggle between viewing modes.
+* Ben: The first mode should be a static top-down orthographic view of the
+scene.
+* Ben: The second mode should be an animated perspective flythrough which
+forms a complete loop and repeats. The path of the camera is up to you,
+but it must turn 360 degrees around the scene and zoom in or out at some
+point during the process.
+* Glen: The third mode should be a first person view of the ball as it
+moves.
+* Glen: Pressing ’s’ should draw a wireframe outline of the viewing volume
+used in the third mode (in other words, the viewing volume of the pinball).
+* Glen: Pressing ’r’ should reset the process, starting the pinball
+somewhere else in the scene (randomly chosen).
+* Glen: When resized, the aspect ratio of the objects in your scene should
+stay the same (no stretching).
+* Both of us: All code should be in one file, called pinball.cpp
+
