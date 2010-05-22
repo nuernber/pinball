@@ -794,8 +794,10 @@ void display(void)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
-  if(currentview == 0)
+  if(currentview == 0) {
     glOrtho(-8,8,-8,8,-500,500);
+    ref[X] = ref[Y] = ref[Z] = 0;
+  }
   else if(currentview == 1)
     {
       // flythrough
@@ -811,14 +813,14 @@ void display(void)
   else
   {
     //glFrustum(-5,5,-5,5,4,100);
-    gluPerspective (90, 1, .1, 100);
-    eye[X] = pinball.pos.x+2;
-    eye[Y] = pinball.radius+2;
-    eye[Z] = pinball.pos.y+2;
-
+    gluPerspective (60, 1, .1, 100);
     ref[X] = pinball.pos.x;
     ref[Y] = pinball.radius;
     ref[Z] = pinball.pos.y;
+
+    eye[X] = pinball.pos.x - (pinball.v.x * 5);
+    eye[Y] = pinball.radius + 4;
+    eye[Z] = pinball.pos.y - (pinball.v.y * 5);
   }
   
   glMatrixMode(GL_MODELVIEW) ;
