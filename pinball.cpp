@@ -110,6 +110,7 @@ public:
   GLdouble velocity;
   GLdouble time2;
   GLdouble dt;
+  bool robot_takeover;
 
   // unsigned int q_len;
   // std::deque<struct collision> queue;
@@ -124,7 +125,8 @@ public:
   void bounce (Pin p, GLdouble t);
   void increaseVelocity() { velocity++; }
   void decreaseVelocity() { velocity--; }
-
+  void transmogrify (void) {robot_takeover = !robot_takeover;}
+  
   void init (GLdouble x, GLdouble y, GLdouble theta) {
     pos.x = x;
     pos.y = y;
@@ -132,6 +134,7 @@ public:
     v.y = sin (theta);
     radius = PINBALL_RADIUS;
     velocity = 5;
+    robot_takeover = false;
   }
 };
 
@@ -144,12 +147,186 @@ void Pinball::random () {
   init (x, y, theta);
 }
 
+
+void full_cylinder (GLfloat w, GLfloat l) {
+  glPushMatrix ();
+
+  glPushMatrix (); /* bottom of the cylinder */
+  glScalef     (w - 1E-5, w - 1E-5, .02);
+  drawCone     ();
+  glPopMatrix  ();
+
+  glPushMatrix (); 
+  glScalef     (w, w, l);
+  drawCylinder ();
+  glPopMatrix  (); 
+  
+  glTranslatef (0, 0, l);
+  
+  glPushMatrix ();  /* top of the cylinder */
+  glScalef     (w - 1E-5, w - 1E-5, .02);
+  glRotatef    (180, 1, 0, 0); /* upside down */
+  drawCone     ();
+  glPopMatrix  (); 
+  
+  glPopMatrix  ();
+}
+
+void stiff_arm () {
+  GLfloat shoulderw = 1;
+  GLfloat shoulderlen = 1;
+  GLfloat armw = .25;
+  GLfloat armlen = 3.5;
+  GLfloat handw = 1.5;
+  GLfloat fingerw = .5;
+
+  glPushMatrix ();
+  
+  glPushMatrix ();
+  full_cylinder (shoulderw, shoulderlen);
+  glPopMatrix  ();
+
+  glTranslatef (shoulderw, 0, (shoulderlen - (armw/2))/2 );
+  
+  glPushMatrix ();
+  glRotatef    (90, 0, 1, 0);
+  glScalef     (armw, armw, armlen);
+  drawCylinder ();
+  glPopMatrix  ();
+  
+  glTranslatef (armlen, 0, 0);
+
+  glPushMatrix ();
+  glScalef     (fingerw, handw, fingerw);
+  drawCube     ();
+  glPopMatrix  ();
+
+  glPushMatrix ();
+  glTranslatef (fingerw, handw/2 - fingerw/2, 0);
+  glScalef     (handw/2, fingerw, fingerw);
+  drawCube     ();
+  glPopMatrix  ();
+
+  glPushMatrix ();
+  glTranslatef (fingerw, -(handw/2 - fingerw/2), 0);
+  glScalef     (handw/2, fingerw, fingerw);
+  drawCube     ();
+  glPopMatrix  ();
+
+  glPopMatrix  ();
+}
+
+/* His name is Bob */
+void bob (bool odd) {
+  GLfloat legw = 0.25;
+  GLfloat leglen = 2;
+  GLfloat torsolen = 8;
+  GLfloat torsow = 2;
+  GLfloat headlen = 3;
+  GLfloat eye_seperation = 1.3;
+  GLfloat eye_height = 2;
+  GLfloat antennaw = 0.10;
+  GLfloat antennalen = 1.5;
+  GLfloat antenna = 0.35;
+
+  glPushMatrix ();
+  
+  glPushMatrix (); // wheel
+  set_colour   (0, 0, .5); // black
+  drawSphere   ();
+  glPopMatrix  (); // wheel
+
+  glRotatef    (-90, 1, 0, 0); // z vertical
+
+  glTranslatef (0, 0, sqrt (1 - legw*legw));
+
+  glPushMatrix (); // leg
+  set_colour   (.5, .5, 0); // yellow
+  glScalef     (legw, legw, leglen);
+  drawCylinder ();
+  glPopMatrix  ();
+
+  glTranslatef (0, 0, leglen);
+
+  set_colour   (0, .5, 0);
+  full_cylinder (torsow, torsolen);
+
+  glTranslatef (0, 0, torsolen);
+
+  glPushMatrix (); // save matrix for later
+  
+  glPushMatrix ();
+  set_colour   (.2, .2, .2);
+  glTranslatef (0, 0, headlen/2);
+  glScalef     (headlen, headlen, headlen);
+  drawCube     ();
+  glPopMatrix  ();
+
+  glTranslatef (0, 0, headlen);
+  
+  glPushMatrix ();
+  set_colour   (.7, .3, .2);
+  glScalef     (antennaw, antennaw, antennalen);
+  drawCylinder ();
+  glPopMatrix  ();
+
+  glTranslatef (0, 0, antennalen);
+
+  glPushMatrix ();
+  set_colour   (.5, 0, 0);
+  glScalef     (antenna, antenna, antenna);
+  drawSphere   ();
+  glPopMatrix  ();
+
+  glPopMatrix  (); // return to torso height
+
+  glPushMatrix (); // eyes
+
+  set_colour   (.5, .5, .5);
+  glTranslatef (eye_seperation/2, -headlen/2, eye_height);
+  glRotatef    (90, 1, 0, 0);
+  full_cylinder (.25, .25);
+  glPopMatrix  ();
+
+  glPushMatrix (); // eyes
+  glTranslatef (-eye_seperation/2, -headlen/2, eye_height);
+  glRotatef    (90, 1, 0, 0);
+  full_cylinder (.25, .25);
+  glPopMatrix  ();
+
+  glPushMatrix (); // right arm
+  set_colour   (.5, 0, .5);
+  glTranslatef (torsow, 0, -1);
+  glRotatef    (90, 0, 1, 0);
+  if (odd)
+    glRotatef    (-90, 0, 0, 1);
+  stiff_arm    ();
+  glPopMatrix  ();
+
+  glPushMatrix (); // left arm
+  glTranslatef (-torsow, 0, -1);
+  glRotatef    (-90, 0, 1, 0);
+  glRotatef    (180, 0, 0, 1);
+  stiff_arm    ();
+  glPopMatrix  ();
+    
+  glPopMatrix  ();
+}
+
 void Pinball::draw() {
   glPushMatrix ();
+
   set_colour (1, 0, 0);
   glTranslatef (pos.x, radius, pos.y);
-  glScalef (radius, radius, radius);
-  drawSphere ();
+
+  if (!robot_takeover) {
+    glScalef (radius, radius, radius);
+    drawSphere ();
+  } else {
+    glScalef (radius/2., radius/2., radius/2.);
+    bob (!!((int)round(Time*5)%2));
+  }
+
   glPopMatrix ();
 }
 
@@ -513,6 +690,10 @@ void myKey(unsigned char key, int x, int y)
 
   case 'r':
     pinball.random ();
+    break;
+
+  case 'x':
+    pinball.transmogrify ();
     break;
 
   case 's':
