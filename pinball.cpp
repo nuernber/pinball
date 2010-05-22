@@ -121,6 +121,8 @@ public:
   void draw (void);
   void random ();
   void bounce (Pin p, GLdouble t);
+  void increaseVelocity() { velocity++; }
+  void decreaseVelocity() { velocity--; }
 
   void init (GLdouble x, GLdouble y, GLdouble theta) {
     pos.x = x;
@@ -500,6 +502,13 @@ void myKey(unsigned char key, int x, int y)
   float time ;
   double oldCoord;
   switch (key) {
+  // EXTRA CREDIT: increase and decrease pinball velocity
+  case 'p':
+    pinball.increaseVelocity();
+    break;
+  case 'o':
+    pinball.decreaseVelocity();
+    break;
   case 'r':
     pinball.random ();
     break;
