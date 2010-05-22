@@ -53,7 +53,7 @@ void drawSphere(void);
 void moveViewVertical(double eye[], int down);
 
 #define NUMBER_PINS 10
-#define PIN_WIDTH 0.3
+#define PIN_WIDTH 0.2
 
 #define X 0
 #define Y 1
@@ -77,68 +77,117 @@ struct point2D {
 
 struct collision {
   struct point2D pos;
-  GLdouble dir;
+  GLdouble angle;
   GLdouble time;
 };
 
 class Pinball {
-  struct point2D pos;
-  GLdouble angle;
-  GLdouble velocity;
-  unsigned int q_len;
-  std::deque<struct collision> queue;
-
-  void populate_collisions (GLint N);
 public:
-  void update_location (void);
+  struct point2D pos;
+  struct point2D v;
+  GLdouble radius;
 
-  Pinball(GLdouble x, GLdouble y, GLdouble dir) {
+  // unsigned int q_len;
+  // std::deque<struct collision> queue;
+  // void populate_collisions (GLint N);
+  // void update_location (void);
+  // struct collision *wall_collision (struct pt st, struct pt end);
+  // struct collision *pin_collision (struct pt st, struct pt end);
+
+  void draw (void);
+  
+  Pinball(GLdouble x, GLdouble y, GLdouble theta) {
     pos.x = x;
     pos.y = y;
-    velocity = 1;
-    angle = dir;
+    v.x = cosl (theta);
+    v.y = sinl (theta);
+    radius = .75;
   }
 };
 
-void Pinball::update_location () {
-  time_t elapsed_time = Time;
 
-  for (;;) {
-    if (elapsed_time < queue.front().time)
-      { /* translate the pinball */
-	GLdouble distance = velocity * elapsed_time;
-	pos.x += cos (velocity) * distance;
-	pos.y += sin (velocity) * distance;
-	break;
-      } 
-    else if (elapsed_time > queue.back().time)
-      { /* Overshot the collisions; update, repopulate and repeat */
-	struct collision b = queue.back ();
-	elapsed_time -= b.time;
-	pos = b.pos;
-	velocity = b.dir;
-	
-	queue.clear ();
-
-	populate_collisions (q_len);
-      }
-    else /* search for new trajectory */
-      while (!queue.empty() && queue[0].time < elapsed_time) {
-	queue.pop_front ();
-	this->populate_collisions (1);
-	break;
-      }
-  }
+void Pinball::draw() {
+  glPushMatrix ();
+  set_colour (1, 0, 0);
+  glTranslatef (pos.x, radius, pos.y);
+  drawSphere ();
+  glPopMatrix ();
 }
 
+GLdouble pt_norm (struct point2D s, struct point2D e) {
+  return sqrt (powf (FABS (s.x - e.x), 2)
+	       + powf (FABS (s.y - e.y), 2));
+}
+
+GLdouble pt_slope (struct point2D s, struct point2D e) {
+  return  (s.y-e.y) / (s.x-e.x);
+}
+
+// struct collision *Pinball::wall_collision (struct pt st, struct pt end) {
+//   struct collision *r = (struct collision *) malloc (sizeof (*r));
+//   GLdouble end_theta = pt_slope (pos, end);
+//   GLoduble st_theta = pt_slope (pos, st);
+  
+//   struct pt pb_v, wall_v;
+  
+//   pb_v.x = cosl (angle);
+//   pb_v.y = sinl (angle);
+//   wall_v.x = end.x - st.x;
+//   wall_v.y = end.y - st.y;
+  
+//   return r;
+// }
+
+// struct collision *Pinball::pin_collision (struct pt st, struct pt end) {
+//   struct collision *r = (struct collision *) malloc (sizeof (*r));
+  
+//   return r;
+// }
+
+// void Pinball::update_location () {
+//   time_t elapsed_time = Time;
+
+//   for (;;) {
+//     if (elapsed_time < queue.front().time)
+//       { /* translate the pinball */
+// 	GLdouble distance = velocity * elapsed_time;
+// 	pos.x += cos (velocity) * distance;
+// 	pos.y += sin (velocity) * distance;
+// 	break;
+//       } 
+//     else if (elapsed_time > queue.back().time)
+//       { /* Overshot the collisions; update, repopulate and repeat */
+// 	struct collision b = queue.back ();
+// 	elapsed_time -= b.time;
+// 	pos = b.pos;
+// 	velocity = b.dir;
+	
+// 	queue.clear ();
+
+// 	populate_collisions (q_len);
+//       }
+//     else /* search for new trajectory */
+//       while (!queue.empty() && queue[0].time < elapsed_time) {
+// 	queue.pop_front ();
+// 	this->populate_collisions (1);
+// 	break;
+//       }
+//   }
+// }
+
 class Wall {
+public:
   GLdouble height, width;
   struct point2D inside[4], outside[4];
 
   void face (struct point2D st, struct point2D end);
-public:
+
   void draw (void);
-  bool collides (Pinball p);
+
+  struct collision *next_collision (Pinball p);
+
+  void ping (Pinball p);
+
   Wall (double w, double h, struct point2D walls[4]) {
     width = w;
     height = h;
@@ -156,6 +205,56 @@ public:
   }
 };
 
+void Wall::ping (Pinball p) {
+  bool doesnt_collides = true;
+  int which = -1;
+  
+  for (int i=0; i<4; i++)
+    if (pt_norm (inside[i].x, p.pos) <= p.radius) {
+      doesnt_collides = false;
+      which = i;
+    }
+  if (doesnt_collides)
+    return;
+  
+  struct pt v;
+  
+  switch (which) {
+  case 1:
+    p.angle += 180 - 2*(p.angle
+  case 2:
+  case 3:
+  case 4:
+  default: break;
+  if (which%2) { // vertical
+    p.angle += 180 - 2*(p.angle%180);
+  } else { // horizontal
+    p.angle += 
+  }
+
+}
+
+// struct collision *Wall::next_collision (Pinball p) {
+//   struct collision cs[4];
+//   int which = -1;
+//   GLdouble when = INFINITY;
+
+//   for (int i=0; i<4; ++i) {
+//     j = (i+1)%4;
+//     cs[i] = p.wall_collision (inner[i], [j]);
+//     if (cs[i].time < when) {
+//       which = i;
+//       when = cs[i].time;
+//     }
+//   }
+
+//   struct collision *r = (struct collision *) malloc (sizeof(*r));
+//   r.time = cs[which].time;
+//   r.pos = cs[which].pos;
+//   r.angle = cs[which].angle;
+//   return r;
+// }
+
 void Wall::face (struct point2D st, struct point2D end) {
 
   glBegin (GL_POLYGON);
@@ -167,7 +266,7 @@ void Wall::face (struct point2D st, struct point2D end) {
   glNormal3d (0, 0, 1);
   if (glIsEnabled (GL_AUTO_NORMAL)) {
     if (st.x == end.x ) // since everything is parallel
-
+      glNormal3d (0, 0, 1);
     else
       glNormal3d (1, 0, 0);
   }
@@ -189,6 +288,7 @@ void Wall::draw() {
     glVertex3d (  inside[i].x, height, inside[i].y  );
     glNormal3d ( 0, 0, 1);
     glEnd ();
+
   }
 }
 
@@ -204,7 +304,7 @@ public:
   void draw (void);
   bool collides (Pinball p);
   Pin (struct point2D c) {
-    radius = 1;
+    radius = PIN_WIDTH;
     height = 1.5;
     center.x = c.x;
     center.y = c.y;
@@ -218,12 +318,12 @@ void Pin::draw() {
 
   glPushMatrix ();
   glRotatef (-90, 1, 0, 0);
-  glScaled (.2, .2, height);
+  glScaled (radius, radius, height);
   drawCylinder ();
   glPopMatrix ();
 
   glTranslated (0, height, 0);
-  glScaled (.2, .2, .2);
+  glScaled (radius, radius, radius);
   drawSphere ();
   glPopMatrix ();
 }
@@ -548,15 +648,6 @@ void draw_ground( float x, float y, float z )
 ////////////////////////////////////////////////////
 // Classes 
 
-GLdouble pt_norm (struct point2D s, struct point2D e) {
-  return sqrt (powf (FABS (s.x - e.x), 2)
-	       + powf (FABS (s.y - e.y), 2));
-}
-
-GLdouble pt_slope (struct point2D s, struct point2D e) {
-  return  (s.y-e.y) / (s.x-e.x);
-}
-
 // extra credit function... see the myKey function above.
 void moveViewVertical(double* eye, int down)
 {
@@ -654,7 +745,14 @@ void display(void)
   wall.draw ();
   for (int i=0; i<NUMBER_PINS; i++)
     pins[i].draw ();
-  
+
+  for (int i=0; i<NUMBER_PINS; i++)
+    if (pins[i].ping (pinball))
+      break;
+
+  wall.ping (pinball);
+  pinball.draw ();
+
   /************************************************
    * End your drawing code here
    *************************************************/
