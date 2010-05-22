@@ -261,13 +261,27 @@ void Wall::face (struct point2D st, struct point2D end) {
   glVertex3d ( end.x, height, end.y );
   glVertex3d (  st.x, height,  st.y );
   glNormal3d (0, 0, 1);
-  if (glIsEnabled (GL_AUTO_NORMAL)) {
-    if (st.x == end.x ) // since everything is parallel
-      glNormal3d (0, 0, 1);
-    else
-      glNormal3d (1, 0, 0);
-  }
   glEnd ();
+  if (glIsEnabled (GL_AUTO_NORMAL)) {
+    glBegin(GL_LINES);
+    if (st.x == end.x ) // since everything is parallel
+    {
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2);
+      glVertex3d((st.x + end.x)/2 - 1, height/2, (st.y+end.y)/2);
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2);
+      glVertex3d((st.x + end.x)/2 + 1, height/2, (st.y+end.y)/2);
+      glNormal3d (0, 0, 1);
+    }
+    else
+    {
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2);
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2 - 1);
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2);
+      glVertex3d((st.x + end.x)/2, height/2, (st.y+end.y)/2 + 1);
+      glNormal3d (0, 0, 1);
+    }
+    glEnd();
+  }
 }
 
 void Wall::draw() {
@@ -298,6 +312,16 @@ void Pin::draw() {
   glPushMatrix ();
   glRotatef (-90, 1, 0, 0);
   glScaled (radius, radius, height);
+  if (glIsEnabled (GL_AUTO_NORMAL)) {
+    glBegin(GL_LINES);
+      for(int i = 0; i < 24; i++)
+      {
+        glVertex3d(radius*cos(i*2*pi/24), radius*sin(i*2*pi/24), height/2);
+        //glVertex3d(0, 0, height/2);
+        glVertex3d((1+radius)*cos(i*2*pi/24)/radius, (1+radius)*sin(i*2*pi/24)/radius, height/2);
+      }
+    glEnd();
+  }
   drawCylinder ();
   glPopMatrix ();
 
