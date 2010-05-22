@@ -157,11 +157,20 @@ public:
 };
 
 void Wall::face (struct point2D st, struct point2D end) {
+
   glBegin (GL_POLYGON);
+  set_colour (1.0, 0.5, 0.0);
   glVertex3d (  st.x,      0,  st.y );
   glVertex3d ( end.x,      0, end.y );
   glVertex3d ( end.x, height, end.y );
   glVertex3d (  st.x, height,  st.y );
+  glNormal3d (0, 0, 1);
+  if (glIsEnabled (GL_AUTO_NORMAL)) {
+    if (st.x == end.x ) // since everything is parallel
+
+    else
+      glNormal3d (1, 0, 0);
+  }
   glEnd ();
 }
 
@@ -169,14 +178,16 @@ void Wall::draw() {
   int i, j;
   for (i=0;i<4;i++) {
     j = (i+1)%4;
-    this->face (  inside[i],  inside[j] );
+    this->face (  inside[j],  inside[i] );
     this->face ( outside[i], outside[j] );
 
     glBegin (GL_POLYGON);
-    glVertex3d (  inside[i].x, height, inside[i].y  );
-    glVertex3d (  inside[j].x, height, inside[j].y  );
-    glVertex3d ( outside[j].x, height, outside[j].y );
+    set_colour(0.0, 0.5, 1.0);
     glVertex3d ( outside[i].x, height, outside[i].y );
+    glVertex3d ( outside[j].x, height, outside[j].y );
+    glVertex3d (  inside[j].x, height, inside[j].y  );
+    glVertex3d (  inside[i].x, height, inside[i].y  );
+    glNormal3d ( 0, 0, 1);
     glEnd ();
   }
 }
@@ -201,6 +212,7 @@ public:
 };
 
 void Pin::draw() {
+  set_colour (0, 0, 1);
   glPushMatrix ();
   glTranslated (center.x, 0, center.y);
 
