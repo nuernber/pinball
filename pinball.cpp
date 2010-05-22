@@ -60,6 +60,10 @@ void moveViewVertical(double eye[], int down);
 #define Y 1
 #define Z 2
 
+// EXTRA CREDIT: more flythroughs
+int currentfly = 0;
+#define NFLYS 3
+
 // The eye point and look-at point.
 int currentview = 0;
 #define NVIEWS 3
@@ -588,7 +592,10 @@ void myKey(unsigned char key, int x, int y)
   case 'o':
     pinball.decreaseVelocity();
     break;
-
+  // EXTRA CREDIT: more flythrough
+  case 'f':
+    currentfly = (currentfly + 1 ) % NFLYS;
+    break;
   case 'r':
     pinball.random ();
     break;
@@ -886,8 +893,20 @@ void display(void)
       glFrustum(-5,5,-5,5,4,100);
       int a = 16;
       int b = 8;
-      const int period = 10; // seconds
-      const int yPeriod = 5; // seconds
+      int period = 10; // seconds
+      int yPeriod = 5; // seconds
+      switch(currentfly)
+      {
+      case 0:
+        a = 16; b = 8; period = 10; yPeriod = 5;
+        break;
+      case 1:
+        a = 20; b = 4; period = 5; yPeriod = 2.5;
+        break;
+      case 2:
+        a = 10; b = 10; period = 20; yPeriod = 10;
+        break;
+      }
       eye[X] = a * cos(Time * (2*pi) / period);
       eye[Y] = 7.5 + sin(Time * (2*pi) / yPeriod);
       eye[Z] = b * sin(Time * (2*pi) / period);
