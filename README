@@ -35,4 +35,5 @@ We also added some extra credit as follows:
 * pressing 'o' or 'p' will increase or decrease the pinball's speed.
 * pressing 'x' will change the pinball into a robot.
 * pressing 'f' will cycle the flythrough view modes between 3 different views.
+* pressing 'h', 'j', 'k', and 'l' will move the view around in the first view.
 

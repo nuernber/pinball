@@ -600,6 +600,7 @@ void myKey(unsigned char key, int x, int y)
     pinball.random ();
     break;
 
+  // EXTRA CREDIT: robot instead of a pinball
   case 'x':
     pinball.transmogrify ();
     break;
@@ -895,6 +896,7 @@ void display(void)
       int b = 8;
       int period = 10; // seconds
       int yPeriod = 5; // seconds
+      // EXTRA CREDIT: different flythroughs
       switch(currentfly)
       {
       case 0:
@@ -948,10 +950,6 @@ void display(void)
   wall.draw ();
   for (int i=0; i<NUMBER_PINS; i++)
     pins[i].draw ();
-
-  // for (int i=0; i<NUMBER_PINS; i++)
-  //   if (pins[i].ping (pinball))
-  //     break;
 
   pinball.draw ();
 
