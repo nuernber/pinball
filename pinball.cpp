@@ -127,7 +127,6 @@ public:
     pos.y = y;
     v.x = cos (theta);
     v.y = sin (theta);
-    printf("theta= %d, (%d, %d) is the velocity dir\n", theta, v.x, v.y);
     radius = PINBALL_RADIUS;
     velocity = 5;
   }
@@ -362,32 +361,22 @@ std::vector<Pin> pins;
 Pinball pinball;
 
 void Pinball::bounce (Pin p, GLdouble t) {
-  struct point2D tmp, tmp2, tmp3;
-  tmp.x = p.center.x - pos.x;
-  tmp.y = p.center.y - pos.y;
-  tmp2.x = pos.x + v.x;
-  tmp2.y = pos.y + v.y;
-
-  double dotproduct = tmp.x * v.x + tmp.y * v.y;
-  printf("dotproduct is %f\n", dotproduct);
-  double a = acos(dotproduct/(pt_norm(p.center, pos)*pt_norm(tmp2, pos))); 
-  //a = pi/2 - a;
-  printf("%f is the angle, with dir (%f,%f)\n", (double) (a/pi*180), v.x, v.y);
-  printf("rotating %f degrees\n", (double) (pi - 2*a)/pi*180);
-  a = pi - 2*a;
-  printf("old v: (%f,%f); new v: (%f,%f)\n", v.x, v.y, v.x*cos(a) + v.y*sin(a),-v.x*sin(a) + v.y*cos(a));
-  //v.x = v.x*cos(a) + v.y*sin(a);
-  //v.y = -v.x*sin(a) + v.y*cos(a);
-  v.y = v.x*cos(a) - v.y*sin(a);
-  v.x = v.x*sin(a) + v.y*cos(a);
-  // draw line for testing
-  printf("(%f,%f) = ball position\n", pos.x, pos.y);
-
+  struct point2D incident = v;
+  struct point2D normal;
+  normal.x = pos.x - p.center.x;
+  normal.y = pos.y - p.center.y;
+  normal.x /= pt_norm(pos, p.center);
+  normal.y /= pt_norm(pos, p.center);
+  struct point2D newV;
+  // dot product of normal with incident
+  double dp = incident.x*normal.x + incident.y*normal.y;
+  newV.x = -2*dp*normal.x + incident.x;
+  newV.y = -2*dp*normal.y + incident.y;
+  v.x = newV.x;
+  v.y = newV.y;
   double norm = sqrt(v.x*v.x+v.y*v.y);
   v.x /= norm;
   v.y /= norm;
-  pos.x += velocity * v.x * (t-time2);
-  pos.y += velocity * v.y * (t-time2);
 }
 
 void Pinball::update (GLdouble t) {
