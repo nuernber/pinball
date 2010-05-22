@@ -107,7 +107,7 @@ public:
   struct point2D v;
   GLdouble radius;
   GLdouble velocity;
-  GLdouble time;
+  GLdouble time2;
   GLdouble dt;
 
   // unsigned int q_len;
@@ -117,26 +117,28 @@ public:
   // struct collision *wall_collision (struct pt st, struct pt end);
   // struct collision *pin_collision (struct pt st, struct pt end);
 
-  void update (GLdouble time);
+  void update (GLdouble time2);
   void draw (void);
   void random ();
-  void bounce (Pin p);
+  void bounce (Pin p, GLdouble t);
 
   void init (GLdouble x, GLdouble y, GLdouble theta) {
     pos.x = x;
     pos.y = y;
-    v.x = cosl (theta);
-    v.y = sinl (theta);
+    v.x = cos (theta);
+    v.y = sin (theta);
+    printf("theta= %d, (%d, %d) is the velocity dir\n", theta, v.x, v.y);
     radius = PINBALL_RADIUS;
     velocity = 5;
   }
 };
 
 void Pinball::random () {
+  srand(time(NULL));
   GLdouble w = 6 - PINBALL_RADIUS;
   GLdouble x = (rand() / (double)RAND_MAX) * 2 * w - w;
   GLdouble y = (rand() / (double)RAND_MAX) * 2 * w - w;
-  GLdouble theta = (rand() / RAND_MAX) * 360;
+  GLdouble theta = (rand() / (double)RAND_MAX) * 360;
   init (x, y, theta);
 }
 
@@ -359,43 +361,76 @@ Wall wall (width, height, corners);
 std::vector<Pin> pins;
 Pinball pinball;
 
-void Pinball::bounce (Pin p) {
-  struct point2D tmp;
-  tmp.x = p.center.x + p.radius;
-  tmp.y = p.center.y;
-  
-  GLdouble theta = asinl ((pt_norm (p.center, tmp) /2.) / p.radius);
-  
-  tmp.x = p.center.x * cosl (theta) - sinl (theta);
-  tmp.y = p.center.y * sinl (theta) + cosl (theta);
-  
-  tmp.y *= -1;
+void Pinball::bounce (Pin p, GLdouble t) {
+  struct point2D tmp, tmp2, tmp3;
+  tmp.x = p.center.x - pos.x;
+  tmp.y = p.center.y - pos.y;
+  tmp2.x = pos.x + v.x;
+  tmp2.y = pos.y + v.y;
 
-  tmp.x = p.center.x * cosl (-theta) - sinl (-theta);
-  tmp.y = p.center.y * sinl (-theta) + cosl (-theta);
-    
+  double dotproduct = tmp.x * v.x + tmp.y * v.y;
+  printf("dotproduct is %f\n", dotproduct);
+  double a = acos(dotproduct/(pt_norm(p.center, pos)*pt_norm(tmp2, pos))); 
+  //a = pi/2 - a;
+  printf("%f is the angle, with dir (%f,%f)\n", (double) (a/pi*180), v.x, v.y);
+  printf("rotating %f degrees\n", (double) (pi - 2*a)/pi*180);
+  a = pi - 2*a;
+  printf("old v: (%f,%f); new v: (%f,%f)\n", v.x, v.y, v.x*cos(a) + v.y*sin(a),-v.x*sin(a) + v.y*cos(a));
+  //v.x = v.x*cos(a) + v.y*sin(a);
+  //v.y = -v.x*sin(a) + v.y*cos(a);
+  v.y = v.x*cos(a) - v.y*sin(a);
+  v.x = v.x*sin(a) + v.y*cos(a);
+  // draw line for testing
+  printf("(%f,%f) = ball position\n", pos.x, pos.y);
+
+  double norm = sqrt(v.x*v.x+v.y*v.y);
+  v.x /= norm;
+  v.y /= norm;
+  pos.x += velocity * v.x * (t-time2);
+  pos.y += velocity * v.y * (t-time2);
 }
 
 void Pinball::update (GLdouble t) {
+  GLdouble oldx = pos.x;
+  GLdouble oldy = pos.y;
+  pos.x += velocity * v.x * (t-time2);
+  pos.y += velocity * v.y * (t-time2);
 
   if (pos.x + radius >= 6)
+  {
+    pos.x = oldx;
+    pos.y = oldy;
     v.x = -1 * v.x;
+  }
   if (pos.x - radius <= -6)
+  {
+    pos.x = oldx;
+    pos.y = oldy;
     v.x = -1 * v.x;
+  }
   if (pos.y + radius >= 6)
+  {
+    pos.x = oldx;
+    pos.y = oldy;
     v.y = -1 * v.y;
+  }
   if (pos.y - radius <= -6)
+  {
+    pos.x = oldx;
+    pos.y = oldy;
     v.y = -1 * v.y;
+  }
 
   for (int i=0;i<NUMBER_PINS; i++)
     if (pt_norm (pins[i].center, pos) <= pins[i].radius + radius) {
-      this->bounce (pins[i]);
+      pos.x = oldx;
+      pos.y = oldy;
+      this->bounce (pins[i], t);
       break;
+      return;
     }
 
-  pos.x += velocity * v.x * (t-time);
-  pos.y += velocity * v.y * (t-time);
-  time = t;
+  time2 = t;
 }
 
 
