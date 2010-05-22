@@ -31,3 +31,7 @@ somewhere else in the scene (randomly chosen).
 stay the same (no stretching).
 * Both of us: All code should be in one file, called pinball.cpp
 
+We also added some extra credit as follows:
+* pressing 'o' or 'p' will increase or decrease the pinball's speed.
+* pressing 'x' will change the pinball into a robot.
+
