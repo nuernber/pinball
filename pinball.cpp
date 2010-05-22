@@ -86,6 +86,21 @@ GLdouble pt_slope (struct point2D s, struct point2D e) {
   return  (s.y-e.y) / (s.x-e.x);
 }
 
+class Pin {
+public:
+  GLdouble radius, height;
+  struct point2D center;
+  
+  void draw (void);
+
+  Pin (struct point2D c) {
+    radius = PIN_WIDTH;
+    height = 1.5;
+    center.x = c.x;
+    center.y = c.y;
+  }
+};
+
 class Pinball {
 public:
   struct point2D pos;
@@ -105,7 +120,6 @@ public:
   void update (GLdouble time);
   void draw (void);
   void random ();
-  class Pin;
   void bounce (Pin p);
 
   void init (GLdouble x, GLdouble y, GLdouble theta) {
@@ -132,7 +146,6 @@ void Pinball::draw() {
   glTranslatef (pos.x, radius, pos.y);
   glScalef (radius, radius, radius);
   drawSphere ();
-
   glPopMatrix ();
 }
 
@@ -276,20 +289,6 @@ void Wall::draw() {
   }
 }
 
-class Pin {
-public:
-  GLdouble radius, height;
-  struct point2D center;
-  
-  void draw (void);
-
-  Pin (struct point2D c) {
-    radius = PIN_WIDTH;
-    height = 1.5;
-    center.x = c.x;
-    center.y = c.y;
-  }
-};
 
 void Pin::draw() {
   set_colour (0, 0, 1);
@@ -337,19 +336,19 @@ std::vector<Pin> pins;
 Pinball pinball;
 
 void Pinball::bounce (Pin p) {
-  struct pt tmp;
-  tmp.x = p.pos.x + p.radius;
-  tmp.y = p.pos.y;
+  struct point2D tmp;
+  tmp.x = p.center.x + p.radius;
+  tmp.y = p.center.y;
   
-  GLdouble theta = asinl ((pt_norm (p.pos, tmp) /2.) / p.radius);
+  GLdouble theta = asinl ((pt_norm (p.center, tmp) /2.) / p.radius);
   
-  tmp.x = p.pos.x * cosl (theta) - sinl (theta);
-  tmp.y = p.pos.y * sinl (theta) + cosl (theta);
+  tmp.x = p.center.x * cosl (theta) - sinl (theta);
+  tmp.y = p.center.y * sinl (theta) + cosl (theta);
   
   tmp.y *= -1;
 
-  tmp.x = p.pos.x * cosl (-theta) - sinl (-theta);
-  tmp.y = p.pos.y * sinl (-theta) + cosl (-theta);
+  tmp.x = p.center.x * cosl (-theta) - sinl (-theta);
+  tmp.y = p.center.y * sinl (-theta) + cosl (-theta);
     
 }
 
@@ -366,7 +365,7 @@ void Pinball::update (GLdouble t) {
 
   for (int i=0;i<NUMBER_PINS; i++)
     if (pt_norm (pins[i].center, pos) <= pins[i].radius + radius) {
-      bounce (pins[i]);
+      this->bounce (pins[i]);
       break;
     }
 
