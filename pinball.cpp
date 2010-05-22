@@ -68,6 +68,7 @@ double eye[3] = {1,8,0};
 double ref[3] = {0.0, 0.0, 0.0};
 
 void (*normfns[])(GLenum) = {glEnable, glDisable};
+bool wireframe = false;
 int nfp;
 
 #define FABS(A) (A)<0?-1*(A):(A)
@@ -509,8 +510,17 @@ void myKey(unsigned char key, int x, int y)
   case 'o':
     pinball.decreaseVelocity();
     break;
+
   case 'r':
     pinball.random ();
+    break;
+
+  case 's':
+    if (wireframe)
+      glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    else
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    wireframe = !wireframe;
     break;
     
   case 'q':
@@ -532,7 +542,6 @@ void myKey(unsigned char key, int x, int y)
 
   case 'n':
     normfns[nfp++%2](GL_AUTO_NORMAL);
-    printf (nfp%2 ? "one\n" : "two\n");
     break;
     
     // EXTRA CREDIT FUNCTIONALITY:
@@ -786,7 +795,7 @@ void display(void)
   glLoadIdentity();
 
   if(currentview == 0)
-    glOrtho(-6,6,-6,6,-500,500);
+    glOrtho(-8,8,-8,8,-500,500);
   else if(currentview == 1)
     {
       // flythrough
@@ -800,8 +809,18 @@ void display(void)
       eye[Z] = b * sin(Time * (2*pi) / period);
     }
   else
-    glFrustum(-5,5,-5,5,4,100);
+  {
+    //glFrustum(-5,5,-5,5,4,100);
+    gluPerspective (90, 1, .1, 100);
+    eye[X] = pinball.pos.x+2;
+    eye[Y] = pinball.radius+2;
+    eye[Z] = pinball.pos.y+2;
 
+    ref[X] = pinball.pos.x;
+    ref[Y] = pinball.radius;
+    ref[Z] = pinball.pos.y;
+  }
+  
   glMatrixMode(GL_MODELVIEW) ;
   glLoadIdentity();
 
@@ -868,6 +887,16 @@ void idleFunc(void)
 	   display() whenever the screen needs to be redrawn
 **********************************************************/
 
+void reshape (int width, int height)
+{
+  if (height == 0) height =1;
+  glViewport (0,0,width, height);
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluPerspective(45.0f,(GLfloat)width/(GLfloat)height,0.1f,100.0f);
+  glMatrixMode(GL_MODELVIEW);
+}
+
 int main(int argc, char** argv) 
 {
   
@@ -882,7 +911,7 @@ int main(int argc, char** argv)
   glutIdleFunc(idleFunc);
   glutReshapeFunc (myReshape);
   glutKeyboardFunc( myKey );
-
+  glutReshapeFunc (reshape);
   glutDisplayFunc(display);
   glutMainLoop();
   
