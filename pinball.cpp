@@ -112,13 +112,6 @@ public:
   GLdouble dt;
   bool robot_takeover;
 
-  // unsigned int q_len;
-  // std::deque<struct collision> queue;
-  // void populate_collisions (GLint N);
-  // void update_location (void);
-  // struct collision *wall_collision (struct pt st, struct pt end);
-  // struct collision *pin_collision (struct pt st, struct pt end);
-
   void update (GLdouble time2);
   void draw (void);
   void random ();
@@ -330,59 +323,6 @@ void Pinball::draw() {
   glPopMatrix ();
 }
 
-
-// struct collision *Pinball::wall_collision (struct pt st, struct pt end) {
-//   struct collision *r = (struct collision *) malloc (sizeof (*r));
-//   GLdouble end_theta = pt_slope (pos, end);
-//   GLoduble st_theta = pt_slope (pos, st);
-  
-//   struct pt pb_v, wall_v;
-  
-//   pb_v.x = cosl (angle);
-//   pb_v.y = sinl (angle);
-//   wall_v.x = end.x - st.x;
-//   wall_v.y = end.y - st.y;
-  
-//   return r;
-// }
-
-// struct collision *Pinball::pin_collision (struct pt st, struct pt end) {
-//   struct collision *r = (struct collision *) malloc (sizeof (*r));
-  
-//   return r;
-// }
-
-// void Pinball::update_location () {
-//   time_t elapsed_time = Time;
-
-//   for (;;) {
-//     if (elapsed_time < queue.front().time)
-//       { /* translate the pinball */
-// 	GLdouble distance = velocity * elapsed_time;
-// 	pos.x += cos (velocity) * distance;
-// 	pos.y += sin (velocity) * distance;
-// 	break;
-//       } 
-//     else if (elapsed_time > queue.back().time)
-//       { /* Overshot the collisions; update, repopulate and repeat */
-// 	struct collision b = queue.back ();
-// 	elapsed_time -= b.time;
-// 	pos = b.pos;
-// 	velocity = b.dir;
-	
-// 	queue.clear ();
-
-// 	populate_collisions (q_len);
-//       }
-//     else /* search for new trajectory */
-//       while (!queue.empty() && queue[0].time < elapsed_time) {
-// 	queue.pop_front ();
-// 	this->populate_collisions (1);
-// 	break;
-//       }
-//   }
-// }
-
 class Wall {
 public:
   GLdouble height, width;
@@ -411,27 +351,6 @@ public:
   }
 };
 
-
-// struct collision *Wall::next_collision (Pinball p) {
-//   struct collision cs[4];
-//   int which = -1;
-//   GLdouble when = INFINITY;
-
-//   for (int i=0; i<4; ++i) {
-//     j = (i+1)%4;
-//     cs[i] = p.wall_collision (inner[i], [j]);
-//     if (cs[i].time < when) {
-//       which = i;
-//       when = cs[i].time;
-//     }
-//   }
-
-//   struct collision *r = (struct collision *) malloc (sizeof(*r));
-//   r.time = cs[which].time;
-//   r.pos = cs[which].pos;
-//   r.angle = cs[which].angle;
-//   return r;
-// }
 
 void Wall::face (struct point2D st, struct point2D end) {
 
@@ -498,7 +417,6 @@ void Pin::draw() {
       for(int i = 0; i < 24; i++)
       {
         glVertex3d(radius*cos(i*2*pi/24), radius*sin(i*2*pi/24), height/2);
-        //glVertex3d(0, 0, height/2);
         glVertex3d((1+radius)*cos(i*2*pi/24)/radius, (1+radius)*sin(i*2*pi/24)/radius, height/2);
       }
     glEnd();
@@ -511,23 +429,6 @@ void Pin::draw() {
   drawSphere ();
   glPopMatrix ();
 }
-
-// void Pinball::populate_collisions (GLint N) {
-  // for (int i=0; i<N; ++i) {
-  //   struct collision last = queue.back ();
-  //   GLdouble min_time = obstacles[0].point_of_collision (this);
-  //   int k=0;
-
-  //   for (int j=1; j<obstacles.size(); ++j) {
-  //     GLdouble tmp = obstacles[j].time_of_collision (this);
-  //     if (tmp < min_time) {
-  // 	min_time = tmp;
-  // 	k=j;
-  //     }
-  //   }
-
-  //   //queue.push_back (,min_time);
-// }
 
 GLdouble width = 0.5, height = 2;
 struct point2D I   = { 6,  6};
@@ -996,12 +897,12 @@ void display(void)
     //glFrustum(-5,5,-5,5,4,100);
     gluPerspective (60, 1, .1, 100);
     ref[X] = pinball.pos.x;
-    ref[Y] = pinball.radius;
+    ref[Y] = pinball.radius*2.25;
     ref[Z] = pinball.pos.y;
 
-    eye[X] = pinball.pos.x - (pinball.v.x * 5);
-    eye[Y] = pinball.radius + 4;
-    eye[Z] = pinball.pos.y - (pinball.v.y * 5);
+    eye[X] = pinball.pos.x - pinball.v.x;
+    eye[Y] = pinball.radius*2.25;
+    eye[Z] = pinball.pos.y- pinball.v.y;
   }
   
   glMatrixMode(GL_MODELVIEW) ;
