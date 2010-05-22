@@ -54,6 +54,7 @@ void moveViewVertical(double eye[], int down);
 
 #define NUMBER_PINS 10
 #define PIN_WIDTH 0.2
+#define PINBALL_RADIUS 0.4
 
 #define X 0
 #define Y 1
@@ -71,48 +72,10 @@ int nfp;
 
 #define FABS(A) (A)<0?-1*(A):(A)
 
+
 struct point2D {
   GLdouble x, y;
 };
-
-struct collision {
-  struct point2D pos;
-  GLdouble angle;
-  GLdouble time;
-};
-
-class Pinball {
-public:
-  struct point2D pos;
-  struct point2D v;
-  GLdouble radius;
-
-  // unsigned int q_len;
-  // std::deque<struct collision> queue;
-  // void populate_collisions (GLint N);
-  // void update_location (void);
-  // struct collision *wall_collision (struct pt st, struct pt end);
-  // struct collision *pin_collision (struct pt st, struct pt end);
-
-  void draw (void);
-  
-  Pinball(GLdouble x, GLdouble y, GLdouble theta) {
-    pos.x = x;
-    pos.y = y;
-    v.x = cosl (theta);
-    v.y = sinl (theta);
-    radius = .75;
-  }
-};
-
-
-void Pinball::draw() {
-  glPushMatrix ();
-  set_colour (1, 0, 0);
-  glTranslatef (pos.x, radius, pos.y);
-  drawSphere ();
-  glPopMatrix ();
-}
 
 GLdouble pt_norm (struct point2D s, struct point2D e) {
   return sqrt (powf (FABS (s.x - e.x), 2)
@@ -122,6 +85,57 @@ GLdouble pt_norm (struct point2D s, struct point2D e) {
 GLdouble pt_slope (struct point2D s, struct point2D e) {
   return  (s.y-e.y) / (s.x-e.x);
 }
+
+class Pinball {
+public:
+  struct point2D pos;
+  struct point2D v;
+  GLdouble radius;
+  GLdouble velocity;
+  GLdouble time;
+  GLdouble dt;
+
+  // unsigned int q_len;
+  // std::deque<struct collision> queue;
+  // void populate_collisions (GLint N);
+  // void update_location (void);
+  // struct collision *wall_collision (struct pt st, struct pt end);
+  // struct collision *pin_collision (struct pt st, struct pt end);
+
+  void update (GLdouble time);
+  void draw (void);
+  void random ();
+  class Pin;
+  void bounce (Pin p);
+
+  void init (GLdouble x, GLdouble y, GLdouble theta) {
+    pos.x = x;
+    pos.y = y;
+    v.x = cosl (theta);
+    v.y = sinl (theta);
+    radius = PINBALL_RADIUS;
+    velocity = 5;
+  }
+};
+
+void Pinball::random () {
+  GLdouble w = 6 - PINBALL_RADIUS;
+  GLdouble x = (rand() / (double)RAND_MAX) * 2 * w - w;
+  GLdouble y = (rand() / (double)RAND_MAX) * 2 * w - w;
+  GLdouble theta = (rand() / RAND_MAX) * 360;
+  init (x, y, theta);
+}
+
+void Pinball::draw() {
+  glPushMatrix ();
+  set_colour (1, 0, 0);
+  glTranslatef (pos.x, radius, pos.y);
+  glScalef (radius, radius, radius);
+  drawSphere ();
+
+  glPopMatrix ();
+}
+
 
 // struct collision *Pinball::wall_collision (struct pt st, struct pt end) {
 //   struct collision *r = (struct collision *) malloc (sizeof (*r));
@@ -183,10 +197,8 @@ public:
   void face (struct point2D st, struct point2D end);
 
   void draw (void);
-
+  
   struct collision *next_collision (Pinball p);
-
-  void ping (Pinball p);
 
   Wall (double w, double h, struct point2D walls[4]) {
     width = w;
@@ -205,34 +217,6 @@ public:
   }
 };
 
-void Wall::ping (Pinball p) {
-  bool doesnt_collides = true;
-  int which = -1;
-  
-  for (int i=0; i<4; i++)
-    if (pt_norm (inside[i].x, p.pos) <= p.radius) {
-      doesnt_collides = false;
-      which = i;
-    }
-  if (doesnt_collides)
-    return;
-  
-  struct pt v;
-  
-  switch (which) {
-  case 1:
-    p.angle += 180 - 2*(p.angle
-  case 2:
-  case 3:
-  case 4:
-  default: break;
-  if (which%2) { // vertical
-    p.angle += 180 - 2*(p.angle%180);
-  } else { // horizontal
-    p.angle += 
-  }
-
-}
 
 // struct collision *Wall::next_collision (Pinball p) {
 //   struct collision cs[4];
@@ -292,17 +276,13 @@ void Wall::draw() {
   }
 }
 
-bool Wall::collides(Pinball p) {
-  return true;
-}
-
 class Pin {
+public:
   GLdouble radius, height;
   struct point2D center;
-public:
   
   void draw (void);
-  bool collides (Pinball p);
+
   Pin (struct point2D c) {
     radius = PIN_WIDTH;
     height = 1.5;
@@ -328,11 +308,7 @@ void Pin::draw() {
   glPopMatrix ();
 }
 
-bool Pin::collides(Pinball p) {
-  return true;
-}
-
-void Pinball::populate_collisions (GLint N) {
+// void Pinball::populate_collisions (GLint N) {
   // for (int i=0; i<N; ++i) {
   //   struct collision last = queue.back ();
   //   GLdouble min_time = obstacles[0].point_of_collision (this);
@@ -347,7 +323,7 @@ void Pinball::populate_collisions (GLint N) {
   //   }
 
   //   //queue.push_back (,min_time);
-}
+// }
 
 GLdouble width = 0.5, height = 2;
 struct point2D I   = { 6,  6};
@@ -358,6 +334,47 @@ struct point2D IV  = {-6,  6};
 struct point2D corners[] = {I, II, III, IV}; 
 Wall wall (width, height, corners);
 std::vector<Pin> pins;
+Pinball pinball;
+
+void Pinball::bounce (Pin p) {
+  struct pt tmp;
+  tmp.x = p.pos.x + p.radius;
+  tmp.y = p.pos.y;
+  
+  GLdouble theta = asinl ((pt_norm (p.pos, tmp) /2.) / p.radius);
+  
+  tmp.x = p.pos.x * cosl (theta) - sinl (theta);
+  tmp.y = p.pos.y * sinl (theta) + cosl (theta);
+  
+  tmp.y *= -1;
+
+  tmp.x = p.pos.x * cosl (-theta) - sinl (-theta);
+  tmp.y = p.pos.y * sinl (-theta) + cosl (-theta);
+    
+}
+
+void Pinball::update (GLdouble t) {
+
+  if (pos.x + radius >= 6)
+    v.x = -1 * v.x;
+  if (pos.x - radius <= -6)
+    v.x = -1 * v.x;
+  if (pos.y + radius >= 6)
+    v.y = -1 * v.y;
+  if (pos.y - radius <= -6)
+    v.y = -1 * v.y;
+
+  for (int i=0;i<NUMBER_PINS; i++)
+    if (pt_norm (pins[i].center, pos) <= pins[i].radius + radius) {
+      bounce (pins[i]);
+      break;
+    }
+
+  pos.x += velocity * v.x * (t-time);
+  pos.y += velocity * v.y * (t-time);
+  time = t;
+}
+
 
 /////////////////////////////////////////////////////
 //    PROC: drawCylinder()
@@ -436,6 +453,10 @@ void myKey(unsigned char key, int x, int y)
   float time ;
   double oldCoord;
   switch (key) {
+  case 'r':
+    pinball.random ();
+    break;
+    
   case 'q':
     exit(0); 
     break ;
@@ -555,6 +576,10 @@ void myinit(void)
     Pin pin (point);
     pins.push_back (pin);
   }
+
+  pinball.random ();
+  
+  srand (time (NULL));
 }
 
 /*********************************************************
@@ -746,11 +771,10 @@ void display(void)
   for (int i=0; i<NUMBER_PINS; i++)
     pins[i].draw ();
 
-  for (int i=0; i<NUMBER_PINS; i++)
-    if (pins[i].ping (pinball))
-      break;
+  // for (int i=0; i<NUMBER_PINS; i++)
+  //   if (pins[i].ping (pinball))
+  //     break;
 
-  wall.ping (pinball);
   pinball.draw ();
 
   /************************************************
@@ -776,8 +800,8 @@ void myReshape(int w, int h)
 void idleFunc(void)
 {
   Time = TM.GetElapsedTime();
+  pinball.update (Time);
   glutPostRedisplay();
-
 }
 
 
